@@ -1,5 +1,6 @@
-// electron.app负责管理Electron 应用程序的生命周期， electron.BrowserWindow类负责创建窗口
-const { app, BrowserWindow } = require('electron')
+// electron.app负责管理Electron 应用程序的生命周期， electron.BrowserWindow类负责创建窗口,
+// ipcRenderer:使用它提供的一些方法，从渲染进程发送同步或异步的消息到主进程。 也可以接收主进程回复的消息
+const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 
 // 保持对window对象的全局引用，如果不这么做的话，当JavaScript对象被
@@ -11,12 +12,15 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    // 网页功能的设置
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
+      // 在页面运行其他脚本之前预先加载指定的脚本 无论页面是否集成Node, 此脚本都可以访问所有Node API 脚本路径为文件的绝对路径
+      preload: path.join(__dirname, 'preload.js'),
+      // 是否启用node
+      nodeIntegration: true
+      //是否打开调试工具,与webContents.openDevTools()相关
+      // devTools:true
     }
-    // webPreferences: {
-    //   webSecurity: false
-    // }
   })
 
   // 窗口内加载index.html
@@ -24,10 +28,6 @@ function createWindow() {
 
   // 再窗口加载某个远程地址
   // mainWindow.loadURL('https://github.com')
-
-  let content = mainWindow.webContents
-  console.log("123")
-  console.log(content)
 
   // 打开调试工具
   mainWindow.webContents.openDevTools()
@@ -39,7 +39,21 @@ function createWindow() {
     // 与此同时，你应该删除相应的元素。
     mainWindow = null
   })
+
+  mainWindow.webContents.on('did-finish-load', function() {
+    mainWindow.webContents.send('create1', '123')
+  })
 }
+
+//主进程与渲染进程通信
+// 主进程可以使用 ipcMain 监听 channel来接收这些消息，并通过 event.returnValue 设置回复消息。
+
+// ipcMain.on('create1', (event, arg) => {
+//   console.log('1111111111111')
+//   console.log(event)
+//   console.log(arg)
+//   event.returnValue = 'big banana'
+// })
 
 // Electron 会在初始化后并准备
 // 创建浏览器窗口时，调用这个函数。
